@@ -410,6 +410,66 @@ describe("saved chat settings", () => {
     },
   );
 
+  it.each([1440, 390])(
+    "keeps the reasoning slider on the chosen step while saves are pending at %s px",
+    async (width) => {
+      const { page, base, saved, errors } = await setup(width);
+      // Each save waits for the test, so the owner's newest step is always ahead of the confirmed one.
+      const held: (() => void)[] = [];
+      const sent: string[] = [];
+      let refuse = false;
+      cleanups.push(async () => held.forEach((release) => release()));
+      await page.route(`**/api/chats/${saved.id}/model`, async (route) => {
+        sent.push((JSON.parse(route.request().postData() ?? "{}") as { effort: string }).effort);
+        if (refuse) return route.fulfill({ status: 503, json: { error: "fixture", message: "Settings unavailable" } });
+        const answer = Promise.withResolvers<undefined>();
+        held.push(() => answer.resolve(undefined));
+        await answer.promise;
+        await route.continue();
+      });
+      await page.goto(`${base}/#/chat/${saved.id}`);
+      const control = await modelControl(page, width);
+      await expect.poll(() => control.isEnabled()).toBe(true);
+      await control.click();
+      const card = page.getByRole("dialog", { name: "Model and reasoning" });
+      const slider = card.getByRole("slider", { name: "Reasoning effort" });
+      await expect.poll(() => slider.evaluate((node) => node === document.activeElement)).toBe(true);
+      await card.evaluate((node) => Promise.all(node.getAnimations({ subtree: true }).map(({ finished }) => finished)));
+      const place = () => card.locator(".track").evaluate((track) => Math.round(track.getBoundingClientRect().top));
+      const opened = await place();
+
+      await page.keyboard.press("ArrowRight");
+      await expect.poll(() => sent).toEqual(["minimal"]);
+      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press("ArrowRight");
+      expect(await slider.getAttribute("aria-valuetext")).toBe("Medium");
+      // The card keeps its size while saving, so the slider doesn't move under the pointer.
+      expect(await place()).toBe(opened);
+      held.shift()?.();
+      await expect.poll(() => sent).toEqual(["minimal", "medium"]);
+      // Confirming the earlier step leaves the slider where the owner put it.
+      await expect.poll(() => control.getAttribute("aria-label")).toContain("reasoning minimal");
+      expect(await slider.inputValue()).toBe("3");
+      await page.keyboard.press("ArrowRight");
+      expect(await slider.getAttribute("aria-valuetext")).toBe("High");
+      held.shift()?.();
+      await expect.poll(() => sent).toEqual(["minimal", "medium", "high"]);
+      held.shift()?.();
+      await expect.poll(() => control.getAttribute("aria-label")).toContain("reasoning high");
+      expect(await slider.inputValue()).toBe("4");
+      expect(await place()).toBe(opened);
+
+      // A refused change snaps back to the saved step.
+      refuse = true;
+      await page.keyboard.press("Home");
+      await expect.poll(() => sent.at(-1)).toBe("off");
+      await expect.poll(() => slider.getAttribute("aria-valuetext")).toBe("High");
+      expect(await slider.inputValue()).toBe("4");
+      expect(await control.getAttribute("aria-label")).toContain("reasoning high");
+      expect(errors).toEqual([]);
+    },
+  );
+
   it("refuses a destination changed in another tab and keeps the draft for an explicit retry", async () => {
     const { pal, page, base, saved, provider, errors } = await setup(1440);
     const transport: { event: string; method: string; path: string; status: number | undefined }[] = [];
