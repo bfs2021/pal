@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -187,6 +188,8 @@ describe("Claude subscription provider plugin", () => {
     await f.pal.close();
     for (const { pid } of await f.seen())
       expect(() => process.kill(pid, 0), `Claude Code process ${pid} outlived Pal`).toThrow();
+    // The plugin's empty working folder goes with it.
+    for (const { cwd } of streams.filter(({ request }) => request)) expect(existsSync(cwd ?? "")).toBe(false);
   }, 60_000);
 
   it("refuses an account that is no longer a subscription and ends its process when disabled", async () => {

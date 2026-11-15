@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { createProvider, type ProviderEnv } from "@earendil-works/pi-ai";
@@ -153,7 +153,13 @@ export default {
         if (resource === "status" && path.length === 1 && method === "POST") return status(AbortSignal.timeout(30_000));
         throw new HttpError(404, "not_found", "no such Claude Code operation");
       },
-      dispose: () => closeClaudeProcesses(),
+      async dispose() {
+        await closeClaudeProcesses();
+        await folder?.then(
+          (path) => rm(path, { recursive: true, force: true }),
+          () => undefined,
+        );
+      },
     };
   },
 } satisfies CompiledCapability;
