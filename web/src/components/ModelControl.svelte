@@ -52,8 +52,8 @@
   let open = $state(false);
   let view: "effort" | "models" = $state("effort");
   let query = $state("");
-  let saving = $state(false);
-  /** The step being dragged or keyed to, before the server confirms it. */
+  let saving = false;
+  /** The step being dragged or keyed to, kept until the server confirms it or refuses a change. */
   let preview: number | undefined = $state();
   let wanted: Effort | undefined;
   let container: HTMLDivElement | undefined;
@@ -107,18 +107,19 @@
     wanted = level;
     if (saving) return;
     saving = true;
+    let confirmed = false;
     try {
       while (wanted !== undefined && wanted !== effort) {
         const next = wanted;
         wanted = undefined;
         await onEffort(next);
+        confirmed = effort === next;
       }
     } finally {
       wanted = undefined;
       saving = false;
-      preview = undefined;
-      // A refused change snaps back to the chat's actual effort.
-      if (range !== undefined) range.value = String(index);
+      // After a confirmed save, a newer step still being dragged stays; otherwise show the chat's actual effort.
+      if (!confirmed || preview === index) preview = undefined;
     }
   }
 </script>
@@ -180,7 +181,7 @@
             min="0"
             max={Math.max(0, steps.length - 1)}
             step="1"
-            value={index}
+            value={step}
             disabled={disabled || !adjustable}
             aria-label="Reasoning effort"
             aria-valuetext={LABELS[shown]}
@@ -198,8 +199,6 @@
               : "Sign in with ChatGPT to choose a model."}
           {:else if steps.length <= 1}
             This model has no adjustable reasoning.
-          {:else if saving}
-            Saving…
           {:else}
             Higher reasoning takes longer and uses more of your plan or credits.
           {/if}
