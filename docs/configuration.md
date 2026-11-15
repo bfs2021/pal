@@ -193,12 +193,14 @@ Settings → **MCP servers**:
     **OpenRouter**, each billed to its own account with its own key. A confident "routine" answer, at or above your
     threshold (90% by default), runs the command without a card. Anything else is not run on its own: if the agent
     marked the command as one the task can do without, it goes on with other work and asks you in its reply to run it
-    (the run line shows it as skipped); otherwise the normal approval card appears with the reason. Commands that change
-    privileges, push with Git, publish, delete recursively outside the folder (or after a `cd`, or through a variable),
-    pipe a download into a shell, touch SSH keys, credentials or Pal's data, or change the system always need you, with
-    no Jev request. A failed, slow (over 5 seconds) or unclear answer counts as not safe: Auto never denies and never
-    tries the other connection. Browser actions always ask. Without a ready decision model, Auto isn't offered, and a
-    chat left in Auto asks like Ask. This is a guard against routine prompts, not a sandbox.
+    (the run line shows it as skipped); otherwise the normal approval card appears with the reason. A fixed rule list
+    sends these to you with no Jev request: commands that change privileges, push with Git, publish, delete recursively
+    outside the folder (also after a `cd`, through a variable, `find` or `xargs`), pipe a download into a shell, touch
+    SSH keys, credentials (including `~/.aws` and `.env` files) or Pal's data, or change the system. The rules also read
+    quoted and escaped paths and `~` or `$HOME`, but they match common forms, not every way to write a command. A
+    failed, slow (over 5 seconds) or unclear answer counts as not safe: Auto never denies and never tries the other
+    connection. Browser actions always ask. Without a ready decision model, Auto isn't offered, and a chat left in Auto
+    asks like Ask. This is a guard against routine prompts, not a sandbox.
   - Jev keys are entered in Settings → Jev, stored sealed and never shown again. Pal never uses the OpenRouter key
     saved under Models for Jev. **Check key** is free for OpenRouter; for TypeSafe it is one billed classification.
 - **Longest agent command** (Settings → General) bounds one command the model runs directly: 2 minutes by default,

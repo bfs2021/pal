@@ -70,11 +70,11 @@ refuses an unfinished replay rather than silently resetting its budget.
 - **Ask mode** (the default for every chat) shows each command, its folder and timeout, and runs it only after you
   approve that exact request. Denying, stopping or not answering in time means nothing runs. Switching to **Auto** or
   **Full access** never approves a request that is already waiting.
-- **Auto mode** lets a decision model skip the card only for a confident "routine" answer, bound to the exact
-  command, folder and timeout like your own approval and stored before the command runs, so a restart reuses it
-  without asking again. A fixed rule list always asks first for privilege changes, pushes, publishing, recursive
-  deletes outside the folder, downloaded scripts, credential paths, Pal's data and system changes. It catches obvious
-  mistakes and prompt-injected commands, not everything: Auto is not a sandbox.
+- **Auto mode** lets a decision model skip the card only for a confident "routine" answer, bound to the exact command,
+  folder and timeout like your own approval and stored before the command runs, so a restart reuses it without asking
+  again. A fixed rule list asks first for common forms of privilege changes, pushes, publishing, recursive deletes
+  outside the folder, downloaded scripts, credential paths, Pal's data and system changes. It catches obvious mistakes
+  and prompt-injected commands, not everything: Auto is not a sandbox.
 - **Read-only mode and worktrees are tool policies, not sandboxes.** They change which tools the agent has and
   which folder it works in. They do not confine shell commands, local programs or other processes.
 - **After a crash,** a command or write that may have started is reported as interrupted, never re-run on its own.
